@@ -67,6 +67,6 @@ kubectl logs -f pytorch-simple-master-0
 
 ## Success
 
-Job Success + Fabric Bandwidth Within Range
+Job success + Fabric bandwidth within range
 
 > Synthetic workload, perf checks in CUJ2
