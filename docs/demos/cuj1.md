@@ -54,6 +54,8 @@ eidos validate \
 
 ## Run Job
 
+> May need to migrate to [TrainJob-v2](https://www.kubeflow.org/docs/components/trainer/operator-guides/migration/#new-trainjob-v2) (also Kubeflow)
+
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/kubeflow/training-operator/master/examples/pytorch/simple.yaml
 kubectl get pytorchjobs
