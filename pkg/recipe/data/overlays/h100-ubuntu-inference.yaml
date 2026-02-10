@@ -18,6 +18,8 @@ metadata:
   name: h100-inference
 
 spec:
+  base: inference
+
   criteria:
     accelerator: h100
     os: ubuntu
