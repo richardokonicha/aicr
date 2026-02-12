@@ -42,3 +42,4 @@ testing_tools:
   tilt: '0.35.0'
   helm: 'v4.1.0'
   kwok: 'v0.7.0'
+  chainsaw: 'v0.2.14'
