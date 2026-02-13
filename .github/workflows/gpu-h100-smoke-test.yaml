@@ -1,0 +1,147 @@
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: GPU Smoke Test (nvkind + H100)
+
+on:
+  schedule:
+    - cron: '0 0,6,12,18 * * *'  # Every 6 hours (4x daily)
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+    paths:
+      - '.github/workflows/gpu-h100-smoke-test.yaml'
+      - '.github/actions/gpu-smoke-test/**'
+  workflow_dispatch: {}  # Allow manual runs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  gpu-smoke-test:
+    name: GPU Smoke Test (nvkind + H100)
+    runs-on: linux-amd64-gpu-h100-latest-1
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    env:
+      KIND_CLUSTER_NAME: gpu-smoke-test
+
+    steps:
+
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: GPU Smoke Test
+        uses: ./.github/actions/gpu-smoke-test
+        with:
+          expected-gpu-model: H100
+          exclude-nfd-from-control-plane: 'true'
+
+      # --- H100-only steps: CUJ2 inference workflow ---
+
+      - name: Generate inference recipe
+        run: |
+          ./eidos recipe \
+            --service kind \
+            --accelerator h100 \
+            --os ubuntu \
+            --intent inference \
+            --platform dynamo \
+            --output recipe.yaml
+          echo "--- Recipe ---"
+          cat recipe.yaml
+
+      - name: Validate recipe constraints
+        run: |
+          ./eidos validate \
+            --recipe recipe.yaml \
+            --phase readiness \
+            --namespace gpu-operator \
+            --kubeconfig="${HOME}/.kube/config" \
+            --require-gpu \
+            --image=ko.local:smoke-test
+
+      - name: Generate deployment bundle
+        run: |
+          ./eidos bundle \
+            --recipe recipe.yaml \
+            --accelerated-node-selector nvidia.com/gpu.present=true \
+            --output bundle
+          echo "--- Bundle contents ---"
+          ls -la bundle/
+
+      - name: Install bundle into cluster
+        run: |
+          cd bundle
+          chmod +x deploy.sh
+          # Strip gpu-operator from deploy.sh — it was already installed
+          # by the composite action with kind-specific settings.
+          sed -i '/^echo "Installing gpu-operator/,/\${WAIT_ARGS}$/d' deploy.sh
+          sed -i '/^echo "Applying manifests for gpu-operator/d' deploy.sh
+          sed -i '/gpu-operator\/manifests\//d' deploy.sh
+          echo "--- deploy.sh (gpu-operator stripped) ---"
+          cat deploy.sh
+          ./deploy.sh
+
+      - name: Validate cluster
+        run: |
+          ./eidos validate \
+            --recipe recipe.yaml \
+            --phase readiness \
+            --phase deployment \
+            --phase conformance \
+            --namespace gpu-operator \
+            --kubeconfig="${HOME}/.kube/config" \
+            --require-gpu \
+            --image=ko.local:smoke-test
+
+      - name: Collect debug artifacts
+        if: failure()
+        run: |
+          mkdir -p /tmp/debug-artifacts
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" get all --all-namespaces > /tmp/debug-artifacts/all-resources.txt || true
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" get events --all-namespaces --sort-by='.lastTimestamp' > /tmp/debug-artifacts/events.txt || true
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" -n gpu-operator get pods -o wide > /tmp/debug-artifacts/gpu-operator-pods.txt || true
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" -n gpu-operator logs -l app=nvidia-device-plugin-daemonset --tail=100 > /tmp/debug-artifacts/device-plugin-logs.txt || true
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" -n gpu-operator logs -l app.kubernetes.io/component=gpu-operator --tail=100 > /tmp/debug-artifacts/gpu-operator-logs.txt || true
+          kubectl --context="kind-${KIND_CLUSTER_NAME}" describe pod/gpu-smoke-test > /tmp/debug-artifacts/gpu-pod-describe.txt || true
+
+      - name: Export kind logs
+        if: failure()
+        run: |
+          mkdir -p /tmp/kind-logs
+          kind export logs /tmp/kind-logs --name "${KIND_CLUSTER_NAME}" || true
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: gpu-smoke-test-debug-${{ github.run_id }}
+          path: |
+            /tmp/debug-artifacts/
+            /tmp/kind-logs/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          kind delete cluster --name "${KIND_CLUSTER_NAME}" || true
+          docker system prune -f || true
