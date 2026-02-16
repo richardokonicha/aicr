@@ -24,9 +24,8 @@ metadata:
   name: nvidia-dra-driver-gpu-controller
   namespace: nvidia-dra-driver
 status:
-  conditions:
-    - type: Available
-      status: "True"
+  (conditions[?type == 'Available']):
+    - status: "True"
 ---
 # DRA driver kubelet plugin — runs on GPU nodes, handles device allocation
 apiVersion: apps/v1
