@@ -273,6 +273,10 @@ oras pull --oci-layout "image-oci@$(cat .digest)" -o /tmp/eidos-unpacked
 tree /tmp/eidos-unpacked
 ```
 
+## Summary 
+
+![data flow](images/e2e.png)
+
 ## Links
 
 * [Installation Guide](https://github.com/NVIDIA/eidos/blob/main/docs/user/installation.md)
