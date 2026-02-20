@@ -41,17 +41,17 @@ spec:
   runtimeRequired: true
   # Dynamic: Supports --accelerated-node-toleration CLI flag
   additionalTolerations:
-    {{- if $cust.tolerations }}
-    {{- toYaml $cust.tolerations | nindent 4 }}
+    {{- if $cust.acceleratedTolerations }}
+    {{- toYaml $cust.acceleratedTolerations | nindent 4 }}
     {{- else }}
     - key: dedicated
       operator: Exists
     {{- end }}
   # Dynamic: Supports --accelerated-node-selector CLI flag
-  {{- if $cust.nodeSelector }}
+  {{- if $cust.acceleratedNodeSelector }}
   nodeSelectors:
     matchLabels:
-      {{- toYaml $cust.nodeSelector | nindent 6 }}
+      {{- toYaml $cust.acceleratedNodeSelector | nindent 6 }}
   {{- end }}
   # Static: Baked-in tuning for H100 Ubuntu training
   packages:
