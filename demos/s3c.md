@@ -1,12 +1,12 @@
 # Software Supply Chain Security Demo
 
-Demonstration of supply chain security artifacts provided by Eidos.
+Demonstration of supply chain security artifacts provided by AI Cluster Runtime (AICR).
 
 ![software supply chain security](images/s3c.png)
 
 ## Overview
 
-Eidos (Eidos) provides supply chain security artifacts:
+AICR (AICR) provides supply chain security artifacts:
 
 - **SBOM Attestation**: Complete inventory of packages, libraries, and components in SPDX format
 - **SLSA Build Provenance**: Verifiable build information (how and where images were created)
@@ -25,13 +25,13 @@ Get latest release tag:
 
 ```shell
 TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-  https://api.github.com/repos/NVIDIA/eidos/releases/latest | jq -r '.tag_name')
+  https://api.github.com/repos/NVIDIA/aicr/releases/latest | jq -r '.tag_name')
 echo "Using tag: $TAG"
 ```
 Resolve tag to immutable digest:
 
 ```shell
-IMAGE="ghcr.io/nvidia/eidos"
+IMAGE="ghcr.io/nvidia/aicr"
 DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -47,10 +47,10 @@ Verify using digest:
 gh attestation verify oci://${IMAGE_DIGEST} --owner NVIDIA
 ```
 
-Verify the eidosd image:
+Verify the aicrd image:
 
 ```shell
-IMAGE_API="ghcr.io/nvidia/eidosd"
+IMAGE_API="ghcr.io/nvidia/aicrd"
 DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
 gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner NVIDIA
 ```
@@ -63,7 +63,7 @@ Verify SBOM attestation using digest:
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github.com/NVIDIA/eidos/.github/workflows/.*' \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/aicr/.github/workflows/.*' \
   ${IMAGE_DIGEST} > predicate.json
 ```
 
@@ -88,8 +88,8 @@ Download SBOM:
 
 ```shell
 gh release download $TAG \
-    --repo NVIDIA/eidos \
-    --pattern "eidos_${VERSION}_linux_arm64.sbom.json" \
+    --repo NVIDIA/aicr \
+    --pattern "aicr_${VERSION}_linux_arm64.sbom.json" \
     --clobber \
     --output sbom.json
 ```
@@ -139,16 +139,16 @@ cat <<EOF | kubectl apply -f -
 apiVersion: policy.sigstore.dev/v1beta1
 kind: ClusterImagePolicy
 metadata:
-  name: eidos-images-require-attestation
+  name: aicr-images-require-attestation
 spec:
   images:
-  - glob: "ghcr.io/nvidia/eidos*"
+  - glob: "ghcr.io/nvidia/aicr*"
   authorities:
   - keyless:
       url: https://fulcio.sigstore.dev
       identities:
       - issuerRegExp: ".*\.github\.com.*"
-        subjectRegExp: "https://github.com/NVIDIA/eidos/.*"
+        subjectRegExp: "https://github.com/NVIDIA/aicr/.*"
     attestations:
     - name: build-provenance
       predicateType: https://slsa.dev/provenance/v1
@@ -165,7 +165,7 @@ EOF
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: verify-eidos-attestations
+  name: verify-aicr-attestations
 spec:
   validationFailureAction: Enforce
   rules:
@@ -177,14 +177,14 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/nvidia/eidos*"
+      - "ghcr.io/nvidia/aicr*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
         - entries:
           - keyless:
               issuer: https://token.actions.githubusercontent.com
-              subject: https://github.com/NVIDIA/eidos/.github/workflows/*
+              subject: https://github.com/NVIDIA/aicr/.github/workflows/*
 ```
 
 **Test Policy Enforcement:**
@@ -192,13 +192,13 @@ spec:
 Get latest release tag:
 
 ```shell
-TAG=$(curl -s https://api.github.com/repos/NVIDIA/eidos/releases/latest | jq -r '.tag_name')
+TAG=$(curl -s https://api.github.com/repos/NVIDIA/aicr/releases/latest | jq -r '.tag_name')
 ```
 
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/nvidia/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/nvidia/aicr:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -210,7 +210,7 @@ kubectl run test-invalid --image=nginx:latest
 
 #### Build Process Transparency
 
-All Eidos releases are built using GitHub Actions with full transparency:
+All AICR releases are built using GitHub Actions with full transparency:
 
 1. **Source Code** – Public GitHub repository
 2. **Build Workflow** – `.github/workflows/on-tag.yaml` (version controlled)
@@ -223,15 +223,15 @@ All Eidos releases are built using GitHub Actions with full transparency:
 List all releases with attestations:
 
 ```shell
-gh api repos/NVIDIA/eidos/releases | \
+gh api repos/NVIDIA/aicr/releases | \
   jq -r '.[] | "\(.tag_name): \(.html_url)"'
 ```
 
 View specific build logs:
 
 ```shell
-gh run list --repo NVIDIA/eidos --workflow=on-tag.yaml
-gh run view 21076668418 --repo NVIDIA/eidos --log
+gh run list --repo NVIDIA/aicr --workflow=on-tag.yaml
+gh run view 21076668418 --repo NVIDIA/aicr --log
 ```
 
 **Verify in Transparency Log (Rekor):**
@@ -239,7 +239,7 @@ gh run view 21076668418 --repo NVIDIA/eidos --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --sha $(crane digest ghcr.io/nvidia/eidos:${TAG})
+rekor-cli search --sha $(crane digest ghcr.io/nvidia/aicr:${TAG})
 ```
 
 Get entry details:
@@ -250,4 +250,4 @@ rekor-cli get --uuid <entry-uuid>
 
 ## Links
 
-* [Security](https://github.com/NVIDIA/eidos/blob/main/SECURITY.md)
+* [Security](https://github.com/NVIDIA/aicr/blob/main/SECURITY.md)

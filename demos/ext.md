@@ -1,4 +1,4 @@
-# Eidos Extendability Demo
+# AICR Extendability Demo
 
 ## Embedded Data
 
@@ -13,7 +13,7 @@ tree -L 2 recipes/
 Generate recipe with external data:
 
 ```shell
-eidos recipe \
+aicr recipe \
   --service eks \
   --accelerator gb200 \
   --os ubuntu \
@@ -30,11 +30,11 @@ Output shows:
 Now generate bundles:
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
   --data ./examples/data \
   --deployer argocd \
-  --output oci://ghcr.io/nvidia/eidos-bundle \
+  --output oci://ghcr.io/nvidia/aicr-bundle \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
@@ -45,7 +45,7 @@ eidos bundle \
 The `--debug` flag shows which files are loaded from external vs embedded sources:
 
 ```bash
-eidos --debug recipe \
+aicr --debug recipe \
   --service eks \
   --accelerator gb200 \
   --data ./examples/data
@@ -53,6 +53,6 @@ eidos --debug recipe \
 
 ## Links
 
-* [Installation Guide](https://github.com/NVIDIA/eidos/blob/main/docs/user/installation.md)
-* [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user/cli-reference.md)
-* [Data Reference](https://github.com/NVIDIA/eidos/blob/main/recipes/README.md)
+* [Installation Guide](https://github.com/NVIDIA/aicr/blob/main/docs/user/installation.md)
+* [CLI Reference](https://github.com/NVIDIA/aicr/blob/main/docs/user/cli-reference.md)
+* [Data Reference](https://github.com/NVIDIA/aicr/blob/main/recipes/README.md)

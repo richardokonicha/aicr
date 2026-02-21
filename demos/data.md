@@ -16,7 +16,7 @@ Demo:
 4. **Merging strategy** - Components, constraints, and values are merged with overlay precedence
 5. **Computing deployment order** - Topological sort of components based on dependency references
 
-> Terminology (see [glossary](https://github.com/NVIDIA/eidos/blob/main/docs/README.md))
+> Terminology (see [glossary](https://github.com/NVIDIA/aicr/blob/main/docs/README.md))
 
 ## Recipe Data (Design time == files in git)
 
@@ -104,7 +104,7 @@ At query time, a de facto graph is created, user queries then "selects" the thin
 ### Broad Query (matches multiple overlays)
 
 ```shell
-eidos recipe --service eks | yq .metadata
+aicr recipe --service eks | yq .metadata
 ```
 
 This matches:
@@ -118,13 +118,13 @@ This matches:
 Versions: 
 
 ```shell
-eidos -v
+aicr -v
 ```
 
 ### More Specific Query
 
 ```shell
-eidos recipe \
+aicr recipe \
     --service eks \
     --intent training \
     | yq .metadata
@@ -142,7 +142,7 @@ This matches:
 ### Most Specific Query
 
 ```shell
-eidos recipe \
+aicr recipe \
     --service eks \
     --accelerator gb200 \
     --intent training \
@@ -174,7 +174,7 @@ yq . recipes/overlays/base.yaml
 View computed deployment order is computed at recipe composition time and sorted based on dependencies:
 
 ```shell
-eidos recipe \
+aicr recipe \
     --service eks \
     --accelerator gb200 \
     --intent training \
@@ -195,13 +195,13 @@ Order in `dependencyRefs`:
 Same recipe via API:
 
 ```shell
-curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .
+curl -s "https://aicr.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .
 ```
 
 View applied overlays:
 
 ```shell
-curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .metadata.appliedOverlays
+curl -s "https://aicr.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .metadata.appliedOverlays
 ```
 
 ## Validation Tests
@@ -228,14 +228,14 @@ Integrity of the metadata is paramount!
 
 ### Demo
 
-- [This Demo](https://github.com/NVIDIA/eidos/blob/main/demos/data.md) - Full architecture documentation
+- [This Demo](https://github.com/NVIDIA/aicr/blob/main/demos/data.md) - Full architecture documentation
 
 ### Documentation
-- [Data Architecture](https://github.com/NVIDIA/eidos/blob/main/docs/contributor/data.md) - Full architecture documentation
-- [Recipe Development Guide](https://github.com/NVIDIA/eidos/blob/main/docs/integrator/recipe-development.md) - Adding/modifying recipes
-- [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user/cli-reference.md) - Recipe command options
+- [Data Architecture](https://github.com/NVIDIA/aicr/blob/main/docs/contributor/data.md) - Full architecture documentation
+- [Recipe Development Guide](https://github.com/NVIDIA/aicr/blob/main/docs/integrator/recipe-development.md) - Adding/modifying recipes
+- [CLI Reference](https://github.com/NVIDIA/aicr/blob/main/docs/user/cli-reference.md) - Recipe command options
 
 ### Source Code
-- [Recipe Data Files](https://github.com/NVIDIA/eidos/tree/main/recipes) - YAML recipe definitions
-- [Metadata Store](https://github.com/NVIDIA/eidos/blob/main/pkg/recipe/metadata_store.go) - Inheritance resolution
-- [Criteria Matching](https://github.com/NVIDIA/eidos/blob/main/pkg/recipe/criteria.go) - Matching algorithm
+- [Recipe Data Files](https://github.com/NVIDIA/aicr/tree/main/recipes) - YAML recipe definitions
+- [Metadata Store](https://github.com/NVIDIA/aicr/blob/main/pkg/recipe/metadata_store.go) - Inheritance resolution
+- [Criteria Matching](https://github.com/NVIDIA/aicr/blob/main/pkg/recipe/criteria.go) - Matching algorithm

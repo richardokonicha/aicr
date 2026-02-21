@@ -7,25 +7,25 @@
 Clean up prior state: 
 
 ```shell
-rm -rf ./bundle recipe.yaml /tmp/eidos-unpacked
+rm -rf ./bundle recipe.yaml /tmp/aicr-unpacked
 ```
 
 ## Commands
 
 ```shell
-eidos
+aicr
 ```
 
 ## Recipe
 
 ```shell
-eidos recipe -h
+aicr recipe -h
 ```
 
 Basic (parameters via flags):
 
 ```shell
-eidos recipe --service eks --accelerator gb200 | yq .
+aicr recipe --service eks --accelerator gb200 | yq .
 ```
 
 From criteria file:
@@ -33,7 +33,7 @@ From criteria file:
 ```shell
 cat > /tmp/criteria.yaml << 'EOF'
 kind: RecipeCriteria
-apiVersion: eidos.nvidia.com/v1alpha1
+apiVersion: aicr.nvidia.com/v1alpha1
 metadata:
   name: h100-eks-training-kubeflow
 spec:
@@ -48,7 +48,7 @@ EOF
 Generate recipe from criteria file
 
 ```shell
-eidos recipe --criteria /tmp/criteria.yaml --output recipe.yaml
+aicr recipe --criteria /tmp/criteria.yaml --output recipe.yaml
 ```
 
 > Metadata overlays: `components=11 overlays=7`
@@ -56,7 +56,7 @@ eidos recipe --criteria /tmp/criteria.yaml --output recipe.yaml
 CLI flags override criteria file values
 
 ```shell
-eidos recipe --criteria /tmp/criteria.yaml --service gke | yq .
+aicr recipe --criteria /tmp/criteria.yaml --service gke | yq .
 ```
 
 > Metadata overlays: `components=7 overlays=2`
@@ -66,16 +66,16 @@ eidos recipe --criteria /tmp/criteria.yaml --service gke | yq .
 Recipe from API (GET):
 
 ```shell
-curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .
+curl -s "https://aicr.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .
 ```
 
 Recipe from API (POST with criteria body):
 
 ```shell
-curl -s -X POST "https://eidos.dgxc.io/v1/recipe" \
+curl -s -X POST "https://aicr.dgxc.io/v1/recipe" \
   -H "Content-Type: application/x-yaml" \
   -d 'kind: RecipeCriteria
-apiVersion: eidos.nvidia.com/v1alpha1
+apiVersion: aicr.nvidia.com/v1alpha1
 metadata:
   name: gb200-training
 spec:
@@ -87,7 +87,7 @@ spec:
 Allowed list support in self-hosted API:
 
 ```shell
-curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=l40&intent=training" | jq .
+curl -s "https://aicr.dgxc.io/v1/recipe?service=eks&accelerator=l40&intent=training" | jq .
 ```
 
 # Snapshot
@@ -95,24 +95,24 @@ curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=l40&intent=trai
 > Requires auth'd cluster
 
 ```shell
-eidos snapshot \
+aicr snapshot \
     --deploy-agent \
     --namespace gpu-operator \
     --node-selector nodeGroup=customer-gpu \
-    --output cm://gpu-operator/eidos-snapshot
+    --output cm://gpu-operator/aicr-snapshot
 ```
 
 Check Snapshot in ConfigMap:
 
 ```shell
-kubectl -n gpu-operator get cm eidos-snapshot -o jsonpath='{.data.snapshot\.yaml}' | yq .
+kubectl -n gpu-operator get cm aicr-snapshot -o jsonpath='{.data.snapshot\.yaml}' | yq .
 ```
 
 Recipe from Snapshot:
 
 ```shell
-eidos recipe \
-  --snapshot cm://gpu-operator/eidos-snapshot \
+aicr recipe \
+  --snapshot cm://gpu-operator/aicr-snapshot \
   --intent training \
   --platform kubeflow | yq .
 ```
@@ -126,10 +126,10 @@ yq .constraints recipe.yaml
 Validate Recipe: 
 
 ```shell
-eidos validate \
+aicr validate \
   --recipe recipe.yaml \
   --require-gpu \
-  --snapshot cm://gpu-operator/eidos-snapshot | yq .
+  --snapshot cm://gpu-operator/aicr-snapshot | yq .
 ```
 
 ## Bundle
@@ -137,7 +137,7 @@ eidos validate \
 Bundle from Recipe:
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
   --output ./bundle \
   --system-node-selector nodeGroup=system-pool \
@@ -148,8 +148,8 @@ eidos bundle \
 Bundle from Recipe using API: 
 
 ```shell
-curl -s "https://eidos.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | \
-  curl -X POST "https://eidos.dgxc.io/v1/bundle?deployer=argocd" \
+curl -s "https://aicr.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | \
+  curl -X POST "https://aicr.dgxc.io/v1/bundle?deployer=argocd" \
     -H "Content-Type: application/json" -d @- -o bundle.zip
 ```
 
@@ -182,9 +182,9 @@ chmod +x deploy.sh && ./deploy.sh
 Bundle as an OCI image:
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
-  --output oci://ghcr.io/nvidia/eidos-bundle-example \
+  --output oci://ghcr.io/nvidia/aicr-bundle-example \
   --deployer argocd \
   --image-refs .digest
 ```
@@ -192,13 +192,13 @@ eidos bundle \
 Review manifest: 
 
 ```shell
-crane manifest "ghcr.io/nvidia/eidos-bundle-example@$(cat .digest)" | jq .
+crane manifest "ghcr.io/nvidia/aicr-bundle-example@$(cat .digest)" | jq .
 ```
 
 ## Validate Cluster 
 
 ```shell
-eidos validate \
+aicr validate \
   --recipe recipe.yaml \
   --require-gpu \
   --phase all
@@ -231,7 +231,7 @@ yq . examples/data/overlays/dgxc-teleport.yaml
 Generate recipe with external data:
 
 ```shell
-eidos recipe \
+aicr recipe \
   --service eks \
   --accelerator h100 \
   --os ubuntu \
@@ -253,11 +253,11 @@ yq . recipe.yaml
 Now generate bundles:
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
   --data ./examples/data \
   --deployer argocd \
-  --output oci://ghcr.io/nvidia/eidos-bundle-example \
+  --output oci://ghcr.io/nvidia/aicr-bundle-example \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
@@ -267,10 +267,10 @@ eidos bundle \
 Unpack the image: 
 
 ```shell
-skopeo copy "docker://ghcr.io/nvidia/eidos-bundle-example@$(cat .digest)" oci:image-oci
-mkdir -p /tmp/eidos-unpacked
-oras pull --oci-layout "image-oci@$(cat .digest)" -o /tmp/eidos-unpacked
-tree /tmp/eidos-unpacked
+skopeo copy "docker://ghcr.io/nvidia/aicr-bundle-example@$(cat .digest)" oci:image-oci
+mkdir -p /tmp/aicr-unpacked
+oras pull --oci-layout "image-oci@$(cat .digest)" -o /tmp/aicr-unpacked
+tree /tmp/aicr-unpacked
 ```
 
 ## Summary 
@@ -279,7 +279,7 @@ tree /tmp/eidos-unpacked
 
 ## Links
 
-* [Installation Guide](https://github.com/NVIDIA/eidos/blob/main/docs/user/installation.md)
-* [CLI Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user/cli-reference.md)
-* [API Reference](https://github.com/NVIDIA/eidos/blob/main/docs/user/api-reference.md)
-* [Data Reference](https://github.com/NVIDIA/eidos/blob/main/recipes/README.md)
+* [Installation Guide](https://github.com/NVIDIA/aicr/blob/main/docs/user/installation.md)
+* [CLI Reference](https://github.com/NVIDIA/aicr/blob/main/docs/user/cli-reference.md)
+* [API Reference](https://github.com/NVIDIA/aicr/blob/main/docs/user/api-reference.md)
+* [Data Reference](https://github.com/NVIDIA/aicr/blob/main/recipes/README.md)

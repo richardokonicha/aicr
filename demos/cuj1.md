@@ -1,11 +1,11 @@
-# Eidos - Critical User Journey (CUJ) 1
+# AICR - Critical User Journey (CUJ) 1
 
 > Assuming user is already authenticated to an EKS cluster with 2+ H100 node
 
 ## Gen Recipe
 
 ```shell
-eidos recipe \
+aicr recipe \
   --service eks \
   --accelerator h100 \
   --intent training \
@@ -19,7 +19,7 @@ eidos recipe \
 > Assuming user updates selectors and tolerations as needed
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
   --accelerated-node-selector nodeGroup=gpu-worker \
   --accelerated-node-toleration dedicated=worker-workload:NoSchedule \
@@ -38,7 +38,7 @@ cd ./bundle && chmod +x deploy.sh && ./deploy.sh
 ## Validate Cluster 
 
 ```shell
-eidos validate \
+aicr validate \
   --recipe recipe.yaml \
   --phase readiness \
   --phase deployment \

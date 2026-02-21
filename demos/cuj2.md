@@ -1,11 +1,11 @@
-# Eidos - Critical User Journey (CUJ) 2
+# AICR - Critical User Journey (CUJ) 2
 
 > Assuming user is already authenticated to Kubernetes cluster
 
 ## Gen Recipe
 TODO: add `gb200` accelerator
 ```shell
-eidos recipe \
+aicr recipe \
   --service eks \
   --accelerator h100 \
   --os ubuntu \
@@ -22,7 +22,7 @@ Sample output
 ## Validate Recipe Constraints
 
 ```shell
-eidos validate \
+aicr validate \
   --phase readiness \
   --namespace gpu-operator \
   --node-selector nodeGroup=customer-gpu \
@@ -32,7 +32,7 @@ eidos validate \
 Sample output:
 ```
 recipeSource: recipe.yaml
-snapshotSource: agent:gpu-operator/eidos-validate
+snapshotSource: agent:gpu-operator/aicr-validate
 summary:
   passed: 4
   failed: 0
@@ -70,7 +70,7 @@ phases:
 > Assuming user updates selectors and tolerations as needed
 
 ```shell
-eidos bundle \
+aicr bundle \
   --recipe recipe.yaml \
   --accelerated-node-selector nodeGroup=gpu-worker \
   --accelerated-node-toleration dedicated=worker-workload:NoSchedule \
@@ -105,7 +105,7 @@ chmod +x deploy.sh
 ## Validate Cluster 
 
 ```shell
-eidos validate \
+aicr validate \
   --phase readiness \
   --phase deployment \
   --phase conformance \
@@ -116,7 +116,7 @@ Results (TODO: add full per-component health check and AI Conformance check)
 
 ```
 recipeSource: recipe.yaml
-snapshotSource: agent:gpu-operator/eidos-validate
+snapshotSource: agent:gpu-operator/aicr-validate
 summary:
   passed: 4
   failed: 0
