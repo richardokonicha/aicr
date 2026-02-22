@@ -19,6 +19,7 @@ import (
 
 	// Import check packages for side-effect registration.
 	// Each package's init() function registers its validators.
+	_ "github.com/NVIDIA/aicr/pkg/validator/checks/conformance"
 	_ "github.com/NVIDIA/aicr/pkg/validator/checks/deployment"
 	_ "github.com/NVIDIA/aicr/pkg/validator/checks/readiness"
 )
