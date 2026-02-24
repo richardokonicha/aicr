@@ -3,7 +3,7 @@
 > Assuming user is already authenticated to Kubernetes cluster
 
 ## Gen Recipe
-TODO: add `gb200` accelerator
+
 ```shell
 aicr recipe \
   --service eks \
@@ -13,156 +13,53 @@ aicr recipe \
   --platform dynamo \
   --output recipe.yaml
 ```
-Sample output
-```
-[cli] building recipe from criteria: criteria=criteria(service=eks, accelerator=h100, intent=inference, os=ubuntu, platform=dynamo)
-[cli] recipe generation completed: output=recipe.yaml components=16 overlays=7
-```
 
 ## Validate Recipe Constraints
+
+> Setting additional `--namespace` or `--node-selector` flag to land the agent on on the right node is OK
 
 ```shell
 aicr validate \
   --phase readiness \
-  --namespace gpu-operator \
-  --node-selector nodeGroup=customer-gpu \
   --recipe recipe.yaml
 ```
 
-Sample output:
-```
-recipeSource: recipe.yaml
-snapshotSource: agent:gpu-operator/aicr-validate
-summary:
-  passed: 4
-  failed: 0
-  skipped: 0
-  total: 4
-  status: pass
-  duration: 477.583µs
-phases:
-  readiness:
-    status: pass
-    constraints:
-      - name: K8s.server.version
-        expected: '>= 1.34'
-        actual: v1.34.3-eks-ac2d5a0
-        status: passed
-      - name: OS.release.ID
-        expected: ubuntu
-        actual: ubuntu
-        status: passed
-      - name: OS.release.VERSION_ID
-        expected: "24.04"
-        actual: "24.04"
-        status: passed
-      - name: OS.sysctl./proc/sys/kernel/osrelease
-        expected: '>= 6.8'
-        actual: 6.14.0-1018-aws
-        status: passed
-    duration: 477.583µs
-```
-
-> Assuming cluster meets recipe constraints
-
 ## Generate Bundle
 
-> Assuming user updates selectors and tolerations as needed
+> Setting additional `--accelerated-node-selector`, `--accelerated-node-toleration`, or `--system-node-toleration` flags to land the agent on on the right node is OK
 
 ```shell
 aicr bundle \
   --recipe recipe.yaml \
-  --accelerated-node-selector nodeGroup=gpu-worker \
-  --accelerated-node-toleration dedicated=worker-workload:NoSchedule \
-  --accelerated-node-toleration dedicated=worker-workload:NoExecute \
-  --system-node-toleration dedicated=system-workload:NoSchedule \
-  --system-node-toleration dedicated=system-workload:NoExecute \
   --output bundle
-```
-
-Sample output:
-```
-[cli] generating bundle: deployer=helm type=Helm per-component bundle recipe=recipe.yaml output=./bundle oci=false
-[cli] bundle generated: type=Helm per-component bundle files=42 size_bytes=666795 duration_sec=0.053811959 output_dir=./bundle
-
-Helm per-component bundle generated successfully!
-Output directory: ./bundle
-Files generated: 42
-
-To deploy:
-  1. cd ./bundle
-  2. chmod +x deploy.sh
-  3. ./deploy.sh
 ```
 
 ## Install Bundle into the Cluster
 
 ```shell
-chmod +x deploy.sh
-./deploy.sh
+cd ./bundle && chmod +x deploy.sh && ./deploy.sh
 ```
 
 ## Validate Cluster 
 
 ```shell
 aicr validate \
+  --recipe recipe.yaml \
+  --output report.yaml \
   --phase readiness \
   --phase deployment \
-  --phase conformance \
-  --recipe recipe.yaml
-```
-
-Results (TODO: add full per-component health check and AI Conformance check)
-
-```
-recipeSource: recipe.yaml
-snapshotSource: agent:gpu-operator/aicr-validate
-summary:
-  passed: 4
-  failed: 0
-  skipped: 0
-  total: 4
-  status: pass
-  duration: 1.452461125s
-phases:
-  conformance:
-    status: skipped
-    reason: conformance phase not configured in recipe
-    duration: 9.709µs
-  deployment:
-    status: skipped
-    reason: deployment phase not configured in recipe
-    duration: 7.042µs
-  readiness:
-    status: pass
-    constraints:
-      - name: K8s.server.version
-        expected: '>= 1.34'
-        actual: v1.34.3-eks-ac2d5a0
-        status: passed
-      - name: OS.release.ID
-        expected: ubuntu
-        actual: ubuntu
-        status: passed
-      - name: OS.release.VERSION_ID
-        expected: "24.04"
-        actual: "24.04"
-        status: passed
-      - name: OS.sysctl./proc/sys/kernel/osrelease
-        expected: '>= 6.8'
-        actual: 6.14.0-1018-aws
-        status: passed
-    duration: 64µs
+  --phase conformance
 ```
 
 ## Run Inference Workload
 
 ### Create namespace and HuggingFace secret
 
+> Set HF_TOKEN env var first
+
 ```shell
 kubectl create ns dynamo-workload
 
-# Create HuggingFace token secret (set HF_TOKEN env var first)
 sed "s/<your-hf-token>/$HF_TOKEN/" \
   demos/workloads/inference/hf-token-secret.yaml | kubectl apply -f -
 ```
@@ -171,50 +68,22 @@ sed "s/<your-hf-token>/$HF_TOKEN/" \
 
 ```shell
 kubectl apply -f demos/workloads/inference/vllm-agg.yaml
+```
 
-# Monitor deployment
+Monitor deployment, until all pods are `Running` and ready:
+
+```shell
 kubectl get dynamographdeployments -n dynamo-workload
 kubectl get pods -n dynamo-workload -w
-```
-
-Wait until all pods are `Running` and ready:
-```
-NAME                                    READY   STATUS    RESTARTS   AGE
-vllm-agg-frontend-0                     1/1     Running   0          2m
-vllm-agg-vllmdecodeworker-0             1/1     Running   0          2m
-```
-
-### Architecture
-
-```
-  ┌─────────┐   HTTP    ┌────────────────┐  NATS   ┌────────────────────┐
-  │  Client  │─────────▶│   Frontend     │────────▶│  VllmDecodeWorker  │
-  │ (OpenAI  │  :8000   │                │  :4222  │                    │
-  │  API)    │◀─────────│  vllm-runtime  │◀────────│  dynamo.vllm       │
-  └─────────┘           │  Qwen3-0.6B   │         │  Qwen3-0.6B       │
-                        │                │         │  1x H100 GPU       │
-                        │  CPU node      │         │  GPU node          │
-                        └────────────────┘         └────────────────────┘
-                         ip-100-64-83-166           ip-100-64-171-120
-                         svc: :8000                 svc: :9090
-
-  Services:
-    Frontend          1/1 Ready   componentType: frontend
-    VllmDecodeWorker  1/1 Ready   componentType: worker   gpu: 1
-
-  Flow:
-    1. Client sends OpenAI request (/v1/chat/completions) → Frontend :8000
-    2. Frontend dispatches inference work via NATS :4222
-    3. VllmDecodeWorker runs Qwen/Qwen3-0.6B on H100, returns result
-    4. Response streams back: Worker → NATS → Frontend → Client
 ```
 
 ### Test the endpoint
 
 #### Option 1: Chat UI (browser)
 
+Launch the chat server (port-forward + local UI on port 9090)
+
 ```shell
-# Launch the chat server (port-forward + local UI on port 9090)
 ./demos/workloads/inference/chat-server.sh
 ```
 

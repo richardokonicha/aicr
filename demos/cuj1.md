@@ -14,18 +14,23 @@ aicr recipe \
   --output recipe.yaml
 ```
 
+## Validate Recipe Constraints
+
+> Setting additional `--namespace` or `--node-selector` flag to land the agent on on the right node is OK
+
+```shell
+aicr validate \
+  --phase readiness \
+  --recipe recipe.yaml
+```
+
 ## Generate Bundle
 
-> Assuming user updates selectors and tolerations as needed
+> Setting additional `--accelerated-node-selector`, `--accelerated-node-toleration`, or `--system-node-toleration` flags to land the agent on on the right node is OK
 
 ```shell
 aicr bundle \
   --recipe recipe.yaml \
-  --accelerated-node-selector nodeGroup=gpu-worker \
-  --accelerated-node-toleration dedicated=worker-workload:NoSchedule \
-  --accelerated-node-toleration dedicated=worker-workload:NoExecute \
-  --system-node-toleration dedicated=system-workload:NoSchedule \
-  --system-node-toleration dedicated=system-workload:NoExecute \
   --output bundle
 ```
 
@@ -40,10 +45,10 @@ cd ./bundle && chmod +x deploy.sh && ./deploy.sh
 ```shell
 aicr validate \
   --recipe recipe.yaml \
+  --output report.yaml \
   --phase readiness \
   --phase deployment \
-  --phase conformance \
-  --output report.yaml
+  --phase conformance
 ```
 
 ## Run Job
