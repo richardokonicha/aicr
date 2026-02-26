@@ -18,12 +18,18 @@
 measurements:
   - type: K8s
     subtypes:
-      - name: server
+      - subtype: server
         data:
           version: v1.33.0
+      - subtype: helm
+        data:
+          gpu-operator.chart: gpu-operator
+          gpu-operator.version: v25.10.1
+          gpu-operator.namespace: gpu-operator
+          gpu-operator.status: deployed
   - type: OS
     subtypes:
-      - name: release
+      - subtype: release
         data:
           ID: ubuntu
           VERSION_ID: "24.04"
