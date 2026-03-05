@@ -1,5 +1,6 @@
 # CLAUDE.md
 
+This file is the canonical source for coding-agent rules. `AGENTS.md` is an auto-synced mirror (CI enforced).
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Role & Expertise
@@ -190,7 +191,7 @@ g, ctx := errgroup.WithContext(ctx)
 g.Go(func() error { return collector1.Collect(ctx) })
 g.Go(func() error { return collector2.Collect(ctx) })
 if err := g.Wait(); err != nil {
-    return fmt.Errorf("collection failed: %w", err)
+    return errors.Wrap(errors.ErrCodeInternal, "collection failed", err)
 }
 ```
 
