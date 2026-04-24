@@ -10,7 +10,7 @@ Releases follow a **bi-weekly cadence**. A new release is cut every two weeks.
 |-------------|------|-------------|----------|
 | Regular release | Every two weeks | `patch` or `minor` | Maintainer determines bump type based on changes landed |
 | Hotfix | Between regular releases, as needed | `patch` | Any maintainer can initiate for critical fixes |
-| Pre-release | Before a regular release, as needed | `rc` or `beta` | Any maintainer can create for testing |
+| Pre-release | Before a regular release, as needed | `rc` | Any maintainer can create for testing |
 | Major | Planned | `major` | Requires team agreement and advance communication |
 
 ## What Goes Into a Release
@@ -62,19 +62,16 @@ git checkout main
 git pull origin main
 make qualify
 
-# 1. Tag an RC
-make bump-rc                         # v1.2.3 → v1.2.4-rc1
+# 1. Tag an RC (bumps minor version)
+make bump-rc                         # v1.2.3 → v1.3.0-rc1
 
 # 2. Validate the RC (CI runs, manual testing, etc.)
 
 # 3a. If issues found, fix on main and cut another RC
-make bump-rc                         # v1.2.4-rc1 → v1.2.4-rc2
+make bump-rc                         # v1.3.0-rc1 → v1.3.0-rc2
 
 # 3b. When satisfied, promote the RC to stable (same SHA)
-make bump-promote TAG=v1.2.4-rc2    # → v1.2.4 on same commit
-```
-
-Beta pre-releases follow the same pattern: `make bump-beta`, then `make bump-promote TAG=v1.2.4-beta2`.
+make bump-promote TAG=v1.3.0-rc2    # → v1.3.0 on same commit
 
 Pre-releases exercise the full build/test/attest pipeline but do not update:
 
@@ -146,7 +143,7 @@ Every release includes:
 ## Versioning
 
 - **Semantic versioning**: `vMAJOR.MINOR.PATCH`
-- **Pre-releases**: `v1.2.3-rc1`, `v1.2.3-beta1` (automatically marked in GitHub)
+- **Pre-releases**: `v1.2.3-rc1` (automatically marked in GitHub)
 - **Breaking changes**: Increment MAJOR version
 
 ## Verification

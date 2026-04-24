@@ -360,12 +360,8 @@ bump-patch: ## Tags patch version bump (1.2.3 → 1.2.4)
 	tools/bump patch
 
 .PHONY: bump-rc
-bump-rc: ## Tags RC pre-release (v1.2.3 → v1.2.4-rc1 → v1.2.4-rc2)
+bump-rc: ## Tags RC pre-release (v1.2.3 → v1.3.0-rc1 → v1.3.0-rc2)
 	tools/bump rc
-
-.PHONY: bump-beta
-bump-beta: ## Tags beta pre-release (v1.2.3 → v1.2.4-beta1 → v1.2.4-beta2)
-	tools/bump beta
 
 .PHONY: bump-promote
 bump-promote: ## Promotes a pre-release to stable on the same SHA. Use TAG=v1.2.3-rc1
@@ -712,7 +708,7 @@ help-full: ## Displays commands grouped by category
 	@echo "  make build          Build binaries for current OS/arch"
 	@echo "  make image          Build and push container image"
 	@echo "  make release        Full release with goreleaser"
-	@echo "  make bump-rc        Tag RC pre-release (v1.2.3 -> v1.2.4-rc1)"
+	@echo "  make bump-rc        Tag RC pre-release (v1.2.3 -> v1.3.0-rc1)"
 	@echo "  make bump-promote   Promote RC to stable (TAG=v1.2.4-rc1)"
 	@echo "  make bump-patch     Tag patch version (1.2.3 -> 1.2.4)"
 	@echo "  make bump-minor     Tag minor version (1.2.3 -> 1.3.0)"

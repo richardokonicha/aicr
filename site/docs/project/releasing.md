@@ -43,19 +43,16 @@ No commits are created — the tag points directly at the code. Use `make change
 Use this workflow to validate an RC before promoting it to stable. The promotion re-tags the exact same SHA — no new commits, no re-builds needed.
 
 ```bash
-# 1. Tag an RC
-make bump-rc                         # v1.2.3 → v1.2.4-rc1
+# 1. Tag an RC (bumps minor version)
+make bump-rc                         # v1.2.3 → v1.3.0-rc1
 
 # 2. Validate the RC (CI runs, manual testing, etc.)
 
 # 3a. If issues found, fix on main and cut another RC
-make bump-rc                         # v1.2.4-rc1 → v1.2.4-rc2
+make bump-rc                         # v1.3.0-rc1 → v1.3.0-rc2
 
 # 3b. When satisfied, promote the RC to stable (same SHA)
-make bump-promote TAG=v1.2.4-rc2    # → v1.2.4 on same commit
-```
-
-Beta pre-releases follow the same pattern: `make bump-beta`, then `make bump-promote TAG=v1.2.4-beta2`.
+make bump-promote TAG=v1.3.0-rc2    # → v1.3.0 on same commit
 
 ### Method 3: Manual Workflow Trigger
 
@@ -166,7 +163,7 @@ curl http://localhost:8080/health
 ## Version Management
 
 - **Semantic versioning**: `vMAJOR.MINOR.PATCH`
-- **Pre-releases**: `v1.2.3-rc1`, `v1.2.3-beta1` (automatically marked in GitHub)
+- **Pre-releases**: `v1.2.3-rc1` (automatically marked in GitHub)
 - **Breaking changes**: Increment MAJOR version
 
 ## Demo Cloud Run Deployment

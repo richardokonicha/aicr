@@ -48,21 +48,20 @@ compute_next_version() {
       MINOR=$((MINOR + 1)); PATCH=0; PRERELEASE="" ;;
     patch)
       PATCH=$((PATCH + 1)); PRERELEASE="" ;;
-    rc|beta)
-      # If current tag is already a pre-release of the same type, increment suffix.
-      # Otherwise start at 1 on the next patch version.
-      if [[ "$PRERELEASE" == "${bump_type}"* ]]; then
-        local num="${PRERELEASE#${bump_type}}"
+    rc)
+      # If current tag is already an RC, increment the RC suffix.
+      # Otherwise start at rc1 on the next minor version.
+      if [[ "$PRERELEASE" == rc* ]]; then
+        local num="${PRERELEASE#rc}"
         num=$((num + 1))
-        PRERELEASE="${bump_type}${num}"
+        PRERELEASE="rc${num}"
       else
-        # Bump patch first, then add suffix
-        PATCH=$((PATCH + 1))
-        PRERELEASE="${bump_type}1"
+        MINOR=$((MINOR + 1)); PATCH=0
+        PRERELEASE="rc1"
       fi
       ;;
     *)
-      err "Invalid bump type '$bump_type'. Use: major, minor, patch, rc, beta" ;;
+      err "Invalid bump type '$bump_type'. Use: major, minor, patch, rc" ;;
   esac
 
   local new_version="v${MAJOR}.${MINOR}.${PATCH}"
@@ -166,8 +165,7 @@ Commands:
   major              Tag major bump   (v1.2.3 → v2.0.0)
   minor              Tag minor bump   (v1.2.3 → v1.3.0)
   patch              Tag patch bump   (v1.2.3 → v1.2.4)
-  rc                 Tag RC bump      (v1.2.3 → v1.2.4-rc1, then -rc2, …)
-  beta               Tag beta bump    (v1.2.3 → v1.2.4-beta1, then -beta2, …)
+  rc                 Tag RC bump      (v1.2.3 → v1.3.0-rc1, then -rc2, …)
   promote <rc-tag>   Promote a pre-release tag to stable on the same SHA
 
 Changelog:
@@ -176,9 +174,9 @@ Changelog:
   committed to the repository.
 
 Examples:
-  $0 rc                      # Tag v1.2.4-rc1
-  $0 rc                      # Tag v1.2.4-rc2
-  $0 promote v1.2.4-rc2     # Promote to v1.2.4 on same SHA
+  $0 rc                      # Tag v1.3.0-rc1
+  $0 rc                      # Tag v1.3.0-rc2
+  $0 promote v1.3.0-rc2     # Promote to v1.3.0 on same SHA
   $0 patch                   # Tag v1.2.4 on current HEAD
 EOF
   exit 1
@@ -190,6 +188,6 @@ fi
 
 case "$1" in
   promote)           shift; cmd_promote "$@" ;;
-  major|minor|patch|rc|beta) cmd_tag "$1" ;;
+  major|minor|patch|rc) cmd_tag "$1" ;;
   *)                 usage ;;
 esac
