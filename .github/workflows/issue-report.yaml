@@ -47,24 +47,13 @@ jobs:
             const fs = require('fs');
 
             // ---- Configuration ----
-            const SLA = {
-              P0: { days: 30, warnDays: 20 },
-              P1: { days: 180, warnDays: 150 },
-            };
             const TYPE_LABELS = ['bug', 'feature', 'documentation'];
-            const PRIORITY_LABELS = ['P0', 'P1', 'P2'];
-            const MAX_SLA_ITEMS = 5;
             const TITLE_MAX = 50;
             const REPO_URL = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`;
-            const PROJECT_URL = 'https://github.com/orgs/NVIDIA/projects/248';
-            const PROJECT_NUMBER = 248;
-            const PROJECT_ORG = 'NVIDIA';
 
             // ---- Helpers ----
             const hasLabel = (issue, name) =>
               issue.labels.some(l => l.name === name);
-            const ageDays = (issue) =>
-              Math.floor((Date.now() - new Date(issue.created_at)) / 86400000);
             const truncate = (s) =>
               s.length > TITLE_MAX ? s.substring(0, TITLE_MAX - 3) + '...' : s;
             // Build GitHub issue filter URL from a search query string.
@@ -92,43 +81,6 @@ jobs:
               !i.pull_request && new Date(i.closed_at) >= new Date(since),
             ).length;
 
-            // ---- Fetch priority from project board via GraphQL ----
-            // Build a map of issueNumber → priority (P0/P1/P2) from
-            // the org project board's Priority custom field.
-            const priorityMap = new Map();
-            const onBoard = new Set();
-            let cursor = null;
-            do {
-              const result = await github.graphql(`
-                query($org: String!, $number: Int!, $cursor: String) {
-                  organization(login: $org) {
-                    projectV2(number: $number) {
-                      items(first: 100, after: $cursor) {
-                        pageInfo { hasNextPage endCursor }
-                        nodes {
-                          content { ... on Issue { number } }
-                          fieldValueByName(name: "Priority") {
-                            ... on ProjectV2ItemFieldSingleSelectValue { name }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              `, { org: PROJECT_ORG, number: PROJECT_NUMBER, cursor });
-              const items = result.organization.projectV2.items;
-              for (const node of items.nodes) {
-                const num = node.content?.number;
-                if (!num) continue;
-                onBoard.add(num);
-                const pri = node.fieldValueByName?.name;
-                if (pri) priorityMap.set(num, pri);
-              }
-              cursor = items.pageInfo.hasNextPage ? items.pageInfo.endCursor : null;
-            } while (cursor);
-
-            const getPriority = (issue) => priorityMap.get(issue.number) || null;
-
             // ---- Compute metrics ----
             const total = openIssues.length;
             const newToday = openIssues.filter(
@@ -142,47 +94,6 @@ jobs:
             const types = TYPE_LABELS
               .map(l => [l, openIssues.filter(i => hasLabel(i, l)).length])
               .filter(([, c]) => c > 0);
-
-            // Priority breakdown (from project board field)
-            let prioritized = 0;
-            const priorities = PRIORITY_LABELS.map(l => {
-              const c = openIssues.filter(i => getPriority(i) === l).length;
-              prioritized += c;
-              return [l, c];
-            });
-            const noPriority = total - prioritized;
-            const notOnBoard = openIssues.filter(i => !onBoard.has(i.number)).length;
-
-            // Unassigned P0/P1 (from project board field)
-            const unassigned = openIssues.filter(i => {
-              const pri = getPriority(i);
-              return (pri === 'P0' || pri === 'P1') &&
-                (!i.assignees || i.assignees.length === 0);
-            }).length;
-
-            // SLA analysis (P0: 30 d, P1: 180 d, from project board field)
-            const breaches = [];
-            const atRisk = [];
-            for (const issue of openIssues) {
-              const pri = getPriority(issue);
-              if (!pri || !SLA[pri]) continue;
-              const sla = SLA[pri];
-              const age = ageDays(issue);
-              const title = truncate(issue.title);
-              if (age > sla.days) {
-                breaches.push({
-                  num: issue.number, title, pri,
-                  age, over: age - sla.days,
-                });
-              } else if (age > sla.warnDays) {
-                atRisk.push({
-                  num: issue.number, title, pri,
-                  left: sla.days - age,
-                });
-              }
-            }
-            breaches.sort((a, b) => b.over - a.over);
-            atRisk.sort((a, b) => a.left - b.left);
 
             // ---- Build Slack message (mrkdwn) ----
             const dateStr = new Date().toLocaleDateString('en-US', {
@@ -209,62 +120,10 @@ jobs:
               lines.push(`_By type:_ ${typeParts.join(', ')}`);
             }
 
-            // Priority breakdown (links to project board filtered by priority)
-            const priParts = priorities.map(([l, c]) => {
-              const url = `${PROJECT_URL}/views/2?filterQuery=${encodeURIComponent(`priority:${l}`)}`;
-              return c > 0 ? `${l}: ${link(url, `*${c}*`)}` : `${l}: 0`;
-            });
-            if (noPriority > 0) {
-              const noPriUrl = `${PROJECT_URL}/views/2?filterQuery=${encodeURIComponent('no:priority')}`;
-              priParts.push(`none: ${link(noPriUrl, noPriority)}`);
-            }
-            lines.push(`_By priority:_ ${priParts.join(', ')}`);
-
-            // Flags row (triage + unassigned + not on board, only when non-zero)
-            const flags = [];
+            // Triage flag (only when non-zero)
             if (needsTriage > 0) {
               const triageUrl = issueFilter('is:issue is:open label:needs-triage');
-              flags.push(`Triage: ${link(triageUrl, `*${needsTriage}*`)}`);
-            }
-            if (unassigned > 0) {
-              const unownedUrl = `${PROJECT_URL}/views/2?filterQuery=${encodeURIComponent('priority:P0,P1 no:assignee')}`;
-              flags.push(`Unowned P0/P1: ${link(unownedUrl, `*${unassigned}*`)}`);
-            }
-            if (notOnBoard > 0) {
-              const notOnBoardUrl = issueFilter('is:issue is:open -project:NVIDIA/248');
-              flags.push(`Not on board: ${link(notOnBoardUrl, `*${notOnBoard}*`)}`);
-            }
-            if (flags.length > 0) lines.push(flags.join(', '));
-
-            // SLA breaches
-            if (breaches.length > 0) {
-              lines.push('', ':rotating_light: *SLA Breaches*');
-              for (const b of breaches.slice(0, MAX_SLA_ITEMS)) {
-                lines.push(
-                  `• <${REPO_URL}/issues/${b.num}|#${b.num}> ${b.title} (${b.pri}, ${b.age}d — ${b.over}d over)`,
-                );
-              }
-              if (breaches.length > MAX_SLA_ITEMS) {
-                lines.push(`  _…and ${breaches.length - MAX_SLA_ITEMS} more_`);
-              }
-            }
-
-            // Approaching SLA
-            if (atRisk.length > 0) {
-              lines.push('', ':warning: *Approaching SLA*');
-              for (const r of atRisk.slice(0, MAX_SLA_ITEMS)) {
-                lines.push(
-                  `• <${REPO_URL}/issues/${r.num}|#${r.num}> ${r.title} (${r.pri}, ${r.left}d left)`,
-                );
-              }
-              if (atRisk.length > MAX_SLA_ITEMS) {
-                lines.push(`  _…and ${atRisk.length - MAX_SLA_ITEMS} more_`);
-              }
-            }
-
-            // All-clear badge
-            if (breaches.length === 0 && atRisk.length === 0 && needsTriage === 0) {
-              lines.push('', ':white_check_mark: No SLA issues or untriaged items');
+              lines.push(`Triage: ${link(triageUrl, `*${needsTriage}*`)}`);
             }
 
             const message = lines.join('\n');
@@ -284,29 +143,8 @@ jobs:
             md.push(`| New (24 h) | ${newToday} |`);
             md.push(`| Closed (24 h) | ${closedToday} |`);
             md.push(`| Needs triage | ${needsTriage} |`);
-            for (const [l, c] of priorities) {
+            for (const [l, c] of types) {
               md.push(`| ${l} | ${c} |`);
-            }
-            md.push(`| No priority | ${noPriority} |`);
-            if (unassigned > 0) md.push(`| Unowned P0/P1 | ${unassigned} |`);
-            if (notOnBoard > 0) md.push(`| Not on board | ${notOnBoard} |`);
-            if (breaches.length > 0) {
-              md.push('');
-              md.push('### SLA Breaches');
-              md.push('| Issue | Priority | Age | Over by |');
-              md.push('|-------|----------|-----|---------|');
-              for (const b of breaches) {
-                md.push(`| [#${b.num}](${REPO_URL}/issues/${b.num}) ${b.title} | ${b.pri} | ${b.age} d | ${b.over} d |`);
-              }
-            }
-            if (atRisk.length > 0) {
-              md.push('');
-              md.push('### Approaching SLA');
-              md.push('| Issue | Priority | Days left |');
-              md.push('|-------|----------|-----------|');
-              for (const r of atRisk) {
-                md.push(`| [#${r.num}](${REPO_URL}/issues/${r.num}) ${r.title} | ${r.pri} | ${r.left} d |`);
-              }
             }
             fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md.join('\n') + '\n');
 
