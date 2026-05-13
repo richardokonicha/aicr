@@ -202,6 +202,7 @@ const (
 	CriteriaPlatformDynamo   CriteriaPlatformType = "dynamo"
 	CriteriaPlatformKubeflow CriteriaPlatformType = "kubeflow"
 	CriteriaPlatformNIM      CriteriaPlatformType = "nim"
+	CriteriaPlatformSlurm    CriteriaPlatformType = "slurm"
 )
 
 // ParseCriteriaPlatformType parses a string into a CriteriaPlatformType.
@@ -215,6 +216,8 @@ func ParseCriteriaPlatformType(s string) (CriteriaPlatformType, error) {
 		return CriteriaPlatformKubeflow, nil
 	case "nim":
 		return CriteriaPlatformNIM, nil
+	case "slurm":
+		return CriteriaPlatformSlurm, nil
 	default:
 		return CriteriaPlatformAny, errors.New(errors.ErrCodeInvalidRequest, fmt.Sprintf("invalid platform type: %s", s))
 	}
@@ -222,7 +225,7 @@ func ParseCriteriaPlatformType(s string) (CriteriaPlatformType, error) {
 
 // GetCriteriaPlatformTypes returns all supported platform types sorted alphabetically.
 func GetCriteriaPlatformTypes() []string {
-	return []string{"dynamo", "kubeflow", "nim"}
+	return []string{"dynamo", "kubeflow", "nim", "slurm"}
 }
 
 // Criteria represents the input parameters for recipe matching.

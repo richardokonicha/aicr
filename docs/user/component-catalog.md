@@ -32,6 +32,8 @@ The source of truth is [`recipes/registry.yaml`](https://github.com/NVIDIA/aicr/
 | **k8s-nim-operator** | NVIDIA NIM Operator for managing NIM (NVIDIA Inference Microservices) deployments on Kubernetes. | [K8s NIM Operator](https://github.com/NVIDIA/k8s-nim-operator) |
 | **kueue** | Kubernetes-native job queuing system. Manages quotas and admits jobs for batch and AI workloads. | [Kueue](https://github.com/kubernetes-sigs/kueue) |
 | **kubeflow-trainer** | Kubeflow Training Operator for distributed training jobs (PyTorch, etc.). Manages multi-node training job lifecycle with JobSet integration. | [Kubeflow Trainer](https://github.com/kubeflow/trainer) |
+| **slinky-slurm-operator-crds** | Custom Resource Definitions for the SchedMD Slinky Slurm operator. Installs the `slinky.slurm.net` CRDs (Controller, NodeSet, LoginSet, Accounting, RestApi, Token). Installed separately to support CRD lifecycle management. | [Slinky Slurm Operator](https://github.com/SlinkyProject/slurm-operator) |
+| **slinky-slurm-operator** | SchedMD Slinky Slurm operator and admission webhook. Manages the lifecycle of Slurm clusters declared via Slinky CRs. Cluster-instance CRs (Controller, NodeSet, LoginSet, ...) are user-authored — AICR ships only the operator, mirroring how dynamo-platform and kubeflow-trainer ship operator-only. | [Slinky Slurm Operator](https://github.com/SlinkyProject/slurm-operator) |
 
 ## How Components Are Selected
 
@@ -40,7 +42,7 @@ Not every component appears in every recipe. The recipe engine selects component
 - **Base components** (cert-manager, kube-prometheus-stack) appear in most recipes.
 - **Cloud-specific components** (aws-efa, aws-ebs-csi-driver) are added when the service matches.
 - **Intent-specific components** (kgateway, kgateway-crds) are added based on workload intent (e.g., inference recipes include the inference gateway).
-- **Platform-specific components** (kubeflow-trainer, dynamo-platform) are added when the recipe selects a matching `--platform`.
+- **Platform-specific components** (slinky-slurm-operator, kubeflow-trainer, dynamo-platform) are added when the recipe selects a matching `--platform`.
 - **Accelerator/OS-specific tuning** (nodewright-customizations, nvidia-dra-driver-gpu) varies by hardware and OS combination.
 
 ### NFD Topology Updater
