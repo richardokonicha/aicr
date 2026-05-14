@@ -23,12 +23,14 @@ A machine-readable **CycloneDX 1.6 JSON** companion to this page is produced by 
 - Unique images: **71**
 - Distinct registries: **11**
 
-Registries: `602401143452.dkr.ecr.us-west-2.amazonaws.com`, `cr.kgateway.dev`, `docker.io`, `gcr.io`, `ghcr.io`, `gke.gcr.io`, `nvcr.io`, `public.ecr.aws`, `quay.io`, `registry.k8s.io`, `us-docker.pkg.dev`
+Registries: `602401143452.dkr.ecr.us-west-2.amazonaws.com`, `cr.agentgateway.dev`, `docker.io`, `gcr.io`, `ghcr.io`, `gke.gcr.io`, `nvcr.io`, `public.ecr.aws`, `quay.io`, `registry.k8s.io`, `us-docker.pkg.dev`
 
 ## Components
 
 | Component | Type | Chart | Pinned Version | Images |
 |-----------|------|-------|----------------|--------|
+| agentgateway | helm | agentgateway | v2.2.1 | 1 |
+| agentgateway-crds | helm | agentgateway-crds | v2.2.1 | 0 |
 | aws-ebs-csi-driver | helm | aws-ebs-csi-driver/aws-ebs-csi-driver | 2.59.0 | 6 |
 | aws-efa | helm | aws-efa-k8s-device-plugin | v0.5.26 | 1 |
 | cert-manager | helm | jetstack/cert-manager | v1.20.2 | 4 |
@@ -39,8 +41,6 @@ Registries: `602401143452.dkr.ecr.us-west-2.amazonaws.com`, `cr.kgateway.dev`, `
 | k8s-ephemeral-storage-metrics | helm | k8s-ephemeral-storage-metrics/k8s-ephemeral-storage-metrics | 1.19.2 | 1 |
 | k8s-nim-operator | helm | k8s-nim-operator | 3.1.0 | 1 |
 | kai-scheduler | helm | kai-scheduler | v0.14.1 | 2 |
-| kgateway | helm | kgateway | v2.0.0 | 1 |
-| kgateway-crds | helm | kgateway-crds | v2.0.0 | 0 |
 | kube-prometheus-stack | helm | prometheus-community/kube-prometheus-stack | 84.4.0 | 8 |
 | kubeflow-trainer | helm | kubeflow-trainer | 2.2.0 | 3 |
 | kueue | helm | kueue | 0.17.1 | 1 |
@@ -55,6 +55,14 @@ Registries: `602401143452.dkr.ecr.us-west-2.amazonaws.com`, `cr.kgateway.dev`, `
 | slinky-slurm-operator-crds | helm | slurm-operator-crds | 1.1.0 | 0 |
 
 ## Images by component
+
+### agentgateway
+
+- `cr.agentgateway.dev/controller:v2.2.1`
+
+### agentgateway-crds
+
+_No images extracted._
 
 ### aws-ebs-csi-driver
 
@@ -120,14 +128,6 @@ Registries: `602401143452.dkr.ecr.us-west-2.amazonaws.com`, `cr.kgateway.dev`, `
 
 - `ghcr.io/kai-scheduler/kai-scheduler/crd-upgrader:v0.14.1`
 - `ghcr.io/kai-scheduler/kai-scheduler/operator:v0.14.1`
-
-### kgateway
-
-- `cr.kgateway.dev/kgateway-dev/kgateway:v2.0.0`
-
-### kgateway-crds
-
-_No images extracted._
 
 ### kube-prometheus-stack
 
@@ -222,7 +222,7 @@ AICR pulls from a deliberately diverse set of registries:
 - **`public.ecr.aws`** — AWS public artifacts (aws-ebs-csi-driver).
 - **Regional ECR** (`<account>.dkr.ecr.<region>.amazonaws.com`) — EKS-internal add-ons. The `aws-efa` entry below shows `us-west-2` because that is the in-tree default; deployments in other regions override `awsefa:image.repository` at bundle or install time. See [Regional registry overrides](../integrator/recipe-development.md#regional-registry-overrides) for the pattern.
 - **`gcr.io`, `gke.gcr.io`, `us-docker.pkg.dev`** — GCP/GKE add-ons (gke-nccl-tcpxo).
-- **`cr.kgateway.dev`** — kgateway.
+- **`cr.agentgateway.dev`** — agentgateway (AI inference gateway).
 - **`docker.io`** — assorted upstream images (`busybox`, `pytorch`, etc.).
 
 Customers running in air-gapped or private-registry environments need to mirror every registry above. A dedicated mirroring guide is tracked under [#743](https://github.com/NVIDIA/aicr/issues/743).
