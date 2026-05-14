@@ -1,13 +1,11 @@
 # Third-Party Notices
 
-NVIDIA AI Cluster Runtime (AICR) v0.12.1
+NVIDIA AI Cluster Runtime (AICR)
 
 This file lists every third-party Go module that is statically linked into
 the released `aicr`, `aicrd`, and validator binaries, along with the
 verbatim text of each module's license. Standard library packages are
 excluded (their license is covered by the Go distribution).
-
-Generated: 2026-05-05T16:44:08Z
 
 ## Index
 

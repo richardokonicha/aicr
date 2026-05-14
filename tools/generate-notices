@@ -91,21 +91,18 @@ if [[ ! -s "${INDEX_FILE}" ]]; then
 fi
 
 VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo "unreleased")"
-GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 echo "Composing ${OUTPUT}..." >&2
 {
     cat <<EOF
 # Third-Party Notices
 
-NVIDIA AI Cluster Runtime (AICR) ${VERSION}
+NVIDIA AI Cluster Runtime (AICR)
 
 This file lists every third-party Go module that is statically linked into
 the released \`aicr\`, \`aicrd\`, and validator binaries, along with the
 verbatim text of each module's license. Standard library packages are
 excluded (their license is covered by the Go distribution).
-
-Generated: ${GENERATED_AT}
 
 ## Index
 
