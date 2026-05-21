@@ -221,6 +221,13 @@ jobs:
         env:
           AICR_BIN: ${{ github.workspace }}/aicr
           RUN_ID: ${{ github.run_id }}
+          # Pin the expected Sigstore signer to this workflow's OIDC
+          # identity so verify only passes for bundles signed by this
+          # workflow — without these, any Fulcio identity would verify
+          # and the security check becomes a no-op (see warning in
+          # https://github.com/NVIDIA/aicr/actions/runs/26194736809).
+          EXPECTED_ISSUER: https://token.actions.githubusercontent.com
+          EXPECTED_IDENTITY_REGEXP: '^https://github\.com/NVIDIA/aicr/\.github/workflows/uat-gcp\.yaml@refs/heads/.+$'
         run: ./tests/uat/gcp/run verify "${TEST_CONFIG}"
 
       # Artifacts + summary run BEFORE teardown so a slow or failing
@@ -239,7 +246,8 @@ jobs:
         with:
           name: uat-gcp-evidence-pointer-${{ github.run_id }}
           path: evidence/pointer.yaml
-          retention-days: 365
+          # Org policy caps at 90d; anything higher is silently clamped.
+          retention-days: 90
           if-no-files-found: error
 
       - name: Upload failure debug

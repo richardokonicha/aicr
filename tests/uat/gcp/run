@@ -219,9 +219,21 @@ phase_verify() {
   "${AICR_BIN}" trust update
   echo "::endgroup::"
 
+  # Pin the expected signer when EXPECTED_ISSUER / EXPECTED_IDENTITY_REGEXP
+  # are set (CI sets them to the workflow's OIDC identity). Without pinning,
+  # any Fulcio-signed payload would pass verification — useful for local
+  # dev where the signing identity is the user, mandatory in CI.
+  local args=(evidence verify ./evidence/pointer.yaml)
+  if [[ -n "${EXPECTED_ISSUER:-}" ]]; then
+    args+=(--expected-issuer "${EXPECTED_ISSUER}")
+  fi
+  if [[ -n "${EXPECTED_IDENTITY_REGEXP:-}" ]]; then
+    args+=(--expected-identity-regexp "${EXPECTED_IDENTITY_REGEXP}")
+  fi
+  args+=(-o evidence-result.json -t json)
+
   echo "::group::Verify signed evidence bundle"
-  "${AICR_BIN}" evidence verify ./evidence/pointer.yaml \
-    -o evidence-result.json -t json
+  "${AICR_BIN}" "${args[@]}"
   echo "::endgroup::"
 
   local exit_code
